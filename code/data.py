@@ -4,7 +4,7 @@ File to hold the data related functions
 """
 
 from torch.utils.data import Dataset, DataLoader
-
+import torch
 import numpy as np
 import SimpleITK as sitk
 import os
@@ -56,7 +56,6 @@ def read_files(config: dict) -> List[List]:
     if config['verbose']:
         print('Loading data')
 
-    os.chdir("..")
     os.chdir(config['path_train'])
     os.chdir('source_resolution')
     files = os.listdir()
@@ -101,10 +100,10 @@ def add_padding(config: dict, data: List) -> List[List]:
     if config['verbose']:
         print('Padding data')
 
-    if config['N'] == 1:
+    if int(config['N']) == 1:
         return data
 
-    padding = int((config['N'] - 1) / 2)
+    padding = int((int(config['N']) - 1) / 2)
     padded = [[], [], []]
 
     for i in range(len(data)):
@@ -138,7 +137,8 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
         for patient in set:
             for index in range(index_offset, index_end):
                 sample = {
-                    'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset + 1)]],
+                    # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset + 1)]],
+                    'source': np.expand_dims(patient['source'][index], 0),
                     'target': patient['target'][index]
                 }
                 pairs_train.append(sample)
@@ -146,8 +146,10 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
     for patient in data[-1]:
         for index in range(index_offset, index_end):
             sample = {
-                'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset)]],
+                # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset)]],
+                'source': np.expand_dims(patient['source'][index], 0),
                 'target': patient['target'][index]
+
             }
             pairs_val.append(sample)
 
