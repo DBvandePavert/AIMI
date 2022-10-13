@@ -1,19 +1,11 @@
 import numpy as np
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import matplotlib.pyplot as plt
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
-# %matplotlib inline
-import torch.nn as nn
-import torch.nn.functional as F
-from data import get_loaders
+
 import sys
 import yaml
+
 from tqdm import tqdm
 from data import get_loaders
 
@@ -26,12 +18,11 @@ class Encoder(nn.Module):
         ### Convolutional section
         self.encoder_cnn = nn.Sequential(
             nn.Conv2d(1, 8, 3, stride=2, padding=1),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Conv2d(8, 16, 3, stride=2, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Conv2d(16, 32, 3, stride=2, padding=0),
-            nn.ReLU(True)
+            nn.ReLU()
         )
 
         ### Flatten layer
@@ -40,7 +31,7 @@ class Encoder(nn.Module):
         ### Linear section
         self.encoder_lin = nn.Sequential(
             nn.Linear(11 * 31 * 32, 128),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(128, encoded_space_dim)
         )
 
@@ -58,25 +49,20 @@ class Decoder(nn.Module):
         super().__init__()
         self.decoder_lin = nn.Sequential(
             nn.Linear(encoded_space_dim, 128),
-            nn.ReLU(True),
-            nn.Linear(128, 24 * 32 * 32),  # 11 * 31 * 32
-            nn.ReLU(True)
+            nn.ReLU(),
+            nn.Linear(128, 24 * 32 * 32),
+            nn.ReLU()
         )
 
         self.unflatten = nn.Unflatten(dim=1,
                                       unflattened_size=(32, 32, 24))
 
         self.decoder_conv = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, 3,
-                               stride=2, output_padding=0),
-            nn.BatchNorm2d(16),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(16, 8, 3, stride=2,
-                               padding=1, output_padding=1),
-            nn.BatchNorm2d(8),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(8, 1, 3, stride=2,
-                               padding=1, output_padding=1)
+            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
         )
 
     def forward(self, x):
@@ -84,9 +70,8 @@ class Decoder(nn.Module):
         x = self.decoder_lin(x)
         x = self.unflatten(x)
         x = self.decoder_conv(x)
-        x = torch.sigmoid(x)
 
-        x = x[:, :, :256, :192]  # Questionable move
+        # x = torch.sigmoid(x)
 
         return x
 
@@ -102,7 +87,7 @@ def run(model_config, data_config):
     torch.manual_seed(0)
 
     # Initialize the networks
-    latent_dim = 128
+    latent_dim = 64
 
     encoder = Encoder(encoded_space_dim=latent_dim)
     decoder = Decoder(encoded_space_dim=latent_dim)
@@ -122,8 +107,10 @@ def run(model_config, data_config):
     decoder.to(device)
 
     # Training cycle
-    num_epochs = 50
+    num_epochs = 3
     history_da = {'train_loss': [], 'val_loss': []}
+
+    # Pick out like 5 samples from the validation set
 
     for epoch in range(num_epochs):
         print('EPOCH %d/%d' % (epoch + 1, num_epochs))
@@ -145,11 +132,17 @@ def run(model_config, data_config):
             dataloader=val_loader,
             loss_fn=loss_fn)
 
+        # Once every 5 epochs or so get the output from those 5 picked samples
+        # Save the output images to a folder
+        # Test locally first to see if the output is in the right format/colorspace etc
+
         # Print Validation loss
         history_da['train_loss'].append(train_loss)
         history_da['val_loss'].append(val_loss)
         print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss,
                                                                               val_loss))
+
+    # Also save a graph of the loss over all epochs so we can see where it stop learning
 
 
 # Training function
@@ -183,8 +176,6 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        # Print batch loss
-        # print('\t partial train loss (single batch): %f' % loss.data)
         train_loss.append(loss.detach().cpu().numpy())
 
     return np.mean(train_loss)
@@ -196,7 +187,8 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn):
     # Set evaluation mode for encoder and decoder
     encoder.eval()
     decoder.eval()
-    with torch.no_grad():  # No need to track the gradients
+    with torch.no_grad():
+
         val_loss = []
         for data_batch in tqdm(iter(dataloader)):
 
