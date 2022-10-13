@@ -36,13 +36,9 @@ def run(data_config):
 
     for data_batch in iter(train_loader):
         data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
+        
         # Define result dict
-        results = {
-            "train_loss": [],
-            "val_loss": None,
-            "outputs_gif": [],
-            "output": None
-        }
+        results = {}
 
         # Get images
         source = data_batch["source"][0]
@@ -125,10 +121,7 @@ def run(data_config):
         # Validation loss
         val_loss = loss_fn_test(out, target_tensor)
         results['val_loss'] = val_loss.item()
-        results['output1'] = out.cpu().permute(1,2,0).detach().numpy() / 255
-        results['output2'] = out.cpu().permute(1,2,0).detach().numpy() * 255
-        results['output3'] = out.cpu().permute(1,2,0).detach().numpy() / 400
-        results['output4'] = out.cpu().permute(1,2,0).detach().numpy() * 400
+        results['output'] = out.cpu().permute(1,2,0).detach().numpy() / 255
 
         runs.append(results)
         break # Comment for complete run
@@ -149,11 +142,8 @@ if __name__ == '__main__':
     data_config = yaml.safe_load(open(data_params))
 
     runs = run(data_config)
-    print(runs[0]['val_loss'])
+    print("Validation loss", runs[0]['val_loss'])
     
-    plt.imsave(final_directory + '/final1.jpg', (runs[0]['output1'])[:, :, 0], cmap="gray")
-    plt.imsave(final_directory + '/final2.jpg', (runs[0]['output2'])[:, :, 0], cmap="gray")
-    plt.imsave(final_directory + '/final3.jpg', (runs[0]['output3'])[:, :, 0], cmap="gray")
-    plt.imsave(final_directory + '/final4.jpg', (runs[0]['output4'])[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final.jpg', (runs[0]['output1'])[:, :, 0], cmap="gray")
 
 
