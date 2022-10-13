@@ -141,7 +141,7 @@ if __name__ == '__main__':
     data_params = sys.argv[1]
 
     current_directory = os.getcwd()
-    final_directory = os.path.join(current_directory, r'output')
+    final_directory = os.path.join(current_directory, r'output').replace("\\", "/")
 
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
@@ -151,5 +151,5 @@ if __name__ == '__main__':
     runs = run(data_config)
     print(runs[0]['val_loss'])
     
-    plt.imsave(final_directory + '\\final.jpg', (runs[0]['output'] * 255)[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final.jpg', (runs[0]['output'] * 255)[:, :, 0], cmap="gray")
 
