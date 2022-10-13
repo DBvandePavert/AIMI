@@ -30,8 +30,8 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 10000
-    show_every = 500
+    num_epochs = 10000 if torch.cuda.is_available() else 10
+    show_every = 500 if torch.cuda.is_available() else 1
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -130,7 +130,10 @@ def run(data_config):
         # Validation loss
         val_loss = loss_fn_test(out, target_tensor)
         results['val_loss'] = val_loss.item()
-        results['output'] = out.cpu().permute(1,2,0).detach().numpy()
+        results['output1'] = out.cpu().permute(1,2,0).detach().numpy() / 255
+        results['output2'] = out.cpu().permute(1,2,0).detach().numpy() * 255
+        results['output3'] = out.cpu().permute(1,2,0).detach().numpy() / 400
+        results['output4'] = out.cpu().permute(1,2,0).detach().numpy() * 400
 
         runs.append(results)
         break # Comment for complete run
@@ -153,5 +156,9 @@ if __name__ == '__main__':
     runs = run(data_config)
     print(runs[0]['val_loss'])
     
-    plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final1.jpg', (runs[0]['output1'])[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final2.jpg', (runs[0]['output2'])[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final3.jpg', (runs[0]['output3'])[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final4.jpg', (runs[0]['output4'])[:, :, 0], cmap="gray")
+
 
