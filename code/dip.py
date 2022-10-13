@@ -79,9 +79,9 @@ def run(data_config):
         target_tensor = target_tensor.to(device)
 
         # Sanity
-        plt.imsave(final_directory + '\\masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
-        plt.imsave(final_directory + '\\mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
-        plt.imsave(final_directory + '\\target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '/masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '/mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '/target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 
         # Define loss functions
         loss_fn_train = torch.nn.MSELoss().to(device)
