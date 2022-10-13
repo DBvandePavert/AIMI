@@ -115,7 +115,7 @@ def run(model_config, data_config):
 
     # Check if the GPU is available
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    print(f'Selected device: {device}')
+    #print(f'Selected device: {device}')
 
     # Move both the encoder and the decoder to the selected device
     encoder.to(device)
@@ -171,8 +171,12 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
         # Decode data
         decoded_data = decoder(encoded_data)
 
+        # To device
+        decoded_data = decoded_data.to(device)
+        data_batch_loss = data_batch['target'].to(device)
+
         # Evaluate loss
-        loss = loss_fn(decoded_data, data_batch['target'])
+        loss = loss_fn(decoded_data, data_batch_loss)
 
         # Backward pass
         optimizer.zero_grad()
@@ -205,7 +209,11 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn):
             # Decode data
             decoded_data = decoder(encoded_data)
 
-            loss = loss_fn(decoded_data, data_batch['target'])
+            # To device
+            decoded_data = decoded_data.to(device)
+            data_batch_loss = data_batch['target'].to(device)
+
+            loss = loss_fn(decoded_data, data_batch_loss)
             val_loss.append(loss.detach().cpu().numpy())
 
     return np.mean(val_loss)
@@ -219,3 +227,4 @@ if __name__ == '__main__':
     data_config = yaml.safe_load(open(data_params))
 
     run(model_config, data_config)
+
