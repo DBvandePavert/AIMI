@@ -11,4 +11,4 @@ module purge
 module load 2021
 module load Anaconda3/2021.05
 source activate AIMIChallenge
-python code/main_2.py configs/model_config.yaml configs/data_config.yaml
+python code/ae.py configs/model_config.yaml configs/data_config.yaml

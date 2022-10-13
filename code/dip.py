@@ -1,3 +1,5 @@
+import os
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,7 +10,6 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
-# %matplotlib inline
 import torch.nn as nn
 import torch.nn.functional as F
 import sys
@@ -17,12 +18,6 @@ from utils import *
 from data import get_loaders
 from network import skip
 torch.nn.Module.add = add_module
-import time
-
-import os
-# os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
-
 
 def run(data_config):
     train_loader, _ = get_loaders(data_config)
