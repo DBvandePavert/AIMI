@@ -18,8 +18,8 @@ from data import get_loaders
 from network import skip
 torch.nn.Module.add = add_module
 
-import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
+# import os
+# os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 
 
@@ -91,7 +91,7 @@ def run(data_config):
         optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-05)
 
         # Create initial input
-        net_input = (0.1) * torch.rand((1,32,256,192))
+        net_input = (0.1) * torch.rand((1,32,256,192)).type(dtype)
 
         for epoch in range(num_epochs):
             optimizer.zero_grad()
