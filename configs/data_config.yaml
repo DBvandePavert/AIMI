@@ -1,0 +1,18 @@
+---
+# Administration
+config_name: "data_1"
+
+# Data location
+path_train: "data/data_train_plus_test_sourceres/train/"
+path_test: "data/data_train_plus_test_sourceres/"
+
+# Hyper params
+N: 1
+batchsize: 10
+
+# Debugging
+verbose: 1
+
+# Data
+sample_size: [256, 256]
+...

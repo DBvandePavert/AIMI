@@ -1,0 +1,16 @@
+---
+# Administration
+config_name: "dip_1"
+
+# Data location
+path_train: "data/data_train_plus_test_sourceres/train/"
+path_test: "data/data_train_plus_test_sourceres/"
+
+# Hyper params
+N: 1
+batchsize: 1
+
+# Debugging
+verbose: 1
+
+...

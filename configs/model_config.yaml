@@ -1,0 +1,20 @@
+---
+# Administration
+logger_mode: "debug"
+config_name: "model_1"
+
+# Hyperparams
+lr: 0.001
+seed: 124
+max_epochs: 40
+
+# Architecture
+encoder: 'ConvEncoder'
+decoder: 'ConvDecoder'
+hidden_channel_dims: [4, 8, 8, 16, 32]
+inverse_hidden_dims: [32, 16, 8, 8, 4]
+latent_dim: 128
+batchnorm: 1
+kernel_size: 3
+stride: 2
+...
