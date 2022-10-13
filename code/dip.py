@@ -29,8 +29,8 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 10000
-    show_every = 500
+    num_epochs = 100
+    show_every = 10
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -52,7 +52,6 @@ def run(data_config):
         source = data_batch["source"][0]
         target = data_batch["target"][0]
 
-
         # Create masked image
         masked = np.zeros((256,192), dtype = float)
         masked[::,1::2] = source / 255
@@ -66,16 +65,16 @@ def run(data_config):
 
         # Prepare target
         target = target / 255
+        target = np.expand_dims(target, axis=0)
 
         # Create tensors
         masked_tensor = torch.tensor(masked).type(dtype)
         mask_tensor = torch.tensor(mask).type(dtype)
-        target_tensor = target
+        target_tensor = torch.tensor(target).type(dtype)
 
         # Define loss functions
-        loss_fn_train = torch.nn.MSELoss()
-        loss_fn_test = torch.nn.MSELoss()
-
+        loss_fn_train = torch.nn.MSELoss().type(dtype)
+        loss_fn_test = torch.nn.MSELoss().type(dtype)
 
         # Initialize the networks
         net = skip(input_depth, img_shape, 
@@ -91,7 +90,7 @@ def run(data_config):
         optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-05)
 
         # Create initial input
-        net_input = (0.1) * torch.rand((1,32,256,192)).type(dtype)
+        net_input = ((0.1) * torch.rand((1,32,256,192))).type(dtype)
 
         for epoch in range(num_epochs):
             optimizer.zero_grad()
@@ -106,7 +105,7 @@ def run(data_config):
             if epoch % show_every == 0:
                 print('EPOCH %d/%d' % (epoch + 1, num_epochs))
                 print("Loss", train_loss.item())
-                results['outputs_gif'] = out.cpu().permute(1,2,0).detach().numpy()
+                # results['outputs_gif'] = out.cpu().permute(1,2,0).detach().numpy()
                 # plt.imsave('testImg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0] * 255, cmap="gray")
 
             # Set weights
@@ -134,3 +133,8 @@ if __name__ == '__main__':
 
     runs = run(data_config)
     print(runs[0]['val_loss'])
+    # current_directory = os.getcwd()
+    # final_directory = os.path.join(current_directory, r'new_folder')
+    # print(current_directory)
+    # if not os.path.exists(final_directory):
+    #     os.makedirs(final_directory)
