@@ -29,8 +29,8 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 100
-    show_every = 10
+    num_epochs = 1000
+    show_every = 100
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -69,18 +69,23 @@ def run(data_config):
         target = np.expand_dims(target, axis=0)
 
         # Create tensors
-        masked_tensor = torch.tensor(masked).type(dtype)
-        mask_tensor = torch.tensor(mask).type(dtype)
-        target_tensor = torch.tensor(target).type(dtype)
+        masked_tensor = torch.tensor(masked)
+        mask_tensor = torch.tensor(mask)
+        target_tensor = torch.tensor(target)
 
         # Move to device
         masked_tensor = masked_tensor.to(device)
         mask_tensor = mask_tensor.to(device)
         target_tensor = target_tensor.to(device)
 
+        # Sanity
+        plt.imsave(final_directory + '\\masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '\\mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '\\target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+
         # Define loss functions
-        loss_fn_train = torch.nn.MSELoss().type(dtype).to(device)
-        loss_fn_test = torch.nn.MSELoss().type(dtype).to(device)
+        loss_fn_train = torch.nn.MSELoss().to(device)
+        loss_fn_test = torch.nn.MSELoss().to(device)
 
         # Initialize the networks
         net = skip(input_depth, img_shape, 
@@ -90,13 +95,13 @@ def run(data_config):
             filter_size_up = 3, filter_size_down = 3, 
             upsample_mode='bilinear', filter_skip_size=1,
             need_sigmoid=True, need_bias=True, pad='reflection', act_fun='LeakyReLU'
-        ).type(dtype).to(device)
+        ).to(device)
 
         # Define optimizer
         optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-05)
 
         # Create initial input
-        net_input = ((0.1) * torch.rand((1,32,256,192))).type(dtype)
+        net_input = ((0.1) * torch.rand((1,32,256,192))).to(device)
 
         for epoch in range(num_epochs):
             optimizer.zero_grad()
@@ -135,16 +140,16 @@ def run(data_config):
 if __name__ == '__main__':
     data_params = sys.argv[1]
 
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory, r'output')
+
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+
     data_config = yaml.safe_load(open(data_params))
 
     runs = run(data_config)
     print(runs[0]['val_loss'])
-    os.chdir('..')
-    os.chdir('..')
-    os.chdir('..')
-    current_directory = os.getcwd()
-    final_directory = os.path.join(current_directory, r'output')
-    if not os.path.exists(final_directory):
-        os.makedirs(final_directory)
+    
     plt.imsave(final_directory + '\\final.jpg', (runs[0]['output'] * 255)[:, :, 0], cmap="gray")
 
