@@ -29,8 +29,8 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 5
-    show_every = 2
+    num_epochs = 10000
+    show_every = 500
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -132,4 +132,4 @@ if __name__ == '__main__':
     data_config = yaml.safe_load(open(data_params))
 
     runs = run(data_config)
-    print(runs)
+    print(runs[0]['val_loss'])
