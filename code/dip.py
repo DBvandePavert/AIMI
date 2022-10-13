@@ -37,6 +37,7 @@ def run(data_config):
 
     # Check if the GPU is available
     dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     for data_batch in iter(train_loader):
         data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
@@ -72,9 +73,14 @@ def run(data_config):
         mask_tensor = torch.tensor(mask).type(dtype)
         target_tensor = torch.tensor(target).type(dtype)
 
+        # Move to device
+        masked_tensor = masked_tensor.to(device)
+        mask_tensor = mask_tensor.to(device)
+        target_tensor = target_tensor.to(device)
+
         # Define loss functions
-        loss_fn_train = torch.nn.MSELoss().type(dtype)
-        loss_fn_test = torch.nn.MSELoss().type(dtype)
+        loss_fn_train = torch.nn.MSELoss().type(dtype).to(device)
+        loss_fn_test = torch.nn.MSELoss().type(dtype).to(device)
 
         # Initialize the networks
         net = skip(input_depth, img_shape, 
@@ -84,7 +90,7 @@ def run(data_config):
             filter_size_up = 3, filter_size_down = 3, 
             upsample_mode='bilinear', filter_skip_size=1,
             need_sigmoid=True, need_bias=True, pad='reflection', act_fun='LeakyReLU'
-        ).type(dtype)
+        ).type(dtype).to(device)
 
         # Define optimizer
         optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-05)
