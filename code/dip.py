@@ -17,6 +17,7 @@ from utils import *
 from data import get_loaders
 from network import skip
 torch.nn.Module.add = add_module
+import time
 
 import os
 # os.environ['KMP_DUPLICATE_LIB_OK']='True'
@@ -29,14 +30,13 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 1000
-    show_every = 100
+    num_epochs = 10000
+    show_every = 500
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
 
     # Check if the GPU is available
-    dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     for data_batch in iter(train_loader):
@@ -140,8 +140,10 @@ def run(data_config):
 if __name__ == '__main__':
     data_params = sys.argv[1]
 
+    dir_name = time.strftime("%Y%m%d-%H%M%S")
+
     current_directory = os.getcwd()
-    final_directory = os.path.join(current_directory, r'output').replace("\\", "/")
+    final_directory = os.path.join(current_directory + "/output/", dir_name).replace("\\", "/")
 
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
@@ -151,5 +153,5 @@ if __name__ == '__main__':
     runs = run(data_config)
     print(runs[0]['val_loss'])
     
-    plt.imsave(final_directory + '/final.jpg', (runs[0]['output'] * 255)[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
 
