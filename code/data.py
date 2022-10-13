@@ -148,7 +148,7 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
             sample = {
                 # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset)]],
                 'source': np.expand_dims(patient['source'][index], 0),
-                'target': patient['target'][index]
+                'target': np.expand_dims(patient['target'][index], 0)
 
             }
             pairs_val.append(sample)
