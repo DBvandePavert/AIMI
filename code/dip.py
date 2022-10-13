@@ -18,7 +18,7 @@ from data import get_loaders
 from network import skip
 torch.nn.Module.add = add_module
 
-# import os
+import os
 # os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 
@@ -139,8 +139,12 @@ if __name__ == '__main__':
 
     runs = run(data_config)
     print(runs[0]['val_loss'])
-    # current_directory = os.getcwd()
-    # final_directory = os.path.join(current_directory, r'new_folder')
-    # print(current_directory)
-    # if not os.path.exists(final_directory):
-    #     os.makedirs(final_directory)
+    os.chdir('..')
+    os.chdir('..')
+    os.chdir('..')
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory, r'output')
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+    plt.imsave(final_directory + '\\final.jpg', (runs[0]['output'] * 255)[:, :, 0], cmap="gray")
+
