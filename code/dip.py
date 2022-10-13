@@ -39,6 +39,7 @@ def run(data_config):
     dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
     for data_batch in iter(train_loader):
+        data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
         # Define result dict
         results = {
             "train_loss": [],
@@ -122,7 +123,7 @@ def run(data_config):
         results['output'] = out.cpu().permute(1,2,0).detach().numpy()
 
         runs.append(results)
-        break
+        break # Comment for complete run
 
     return runs
 
