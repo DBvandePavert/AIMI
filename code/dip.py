@@ -38,7 +38,12 @@ def run(data_config):
         data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
         
         # Define result dict
-        results = {}
+        results = {
+            'train_loss': [],
+            'outputs_gif': [],
+            'val_loss': [],
+            'output': [],
+        }
 
         # Get images
         source = data_batch["source"][0]
@@ -144,6 +149,6 @@ if __name__ == '__main__':
     runs = run(data_config)
     print("Validation loss", runs[0]['val_loss'])
     
-    plt.imsave(final_directory + '/final.jpg', (runs[0]['output1'])[:, :, 0], cmap="gray")
+    plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
 
 
