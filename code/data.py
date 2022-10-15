@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import SimpleITK as sitk
 import os
-from typing import List
+from typing import List, Tuple
 
 
 class SR_Dataset(Dataset):
@@ -36,6 +36,8 @@ def get_loaders(config):
     data = read_files(config)
     padded = add_padding(config, data)
     train_pairs, val_pairs = create_pairs(config, padded)
+    train_pairs, val_pairs = remove_empty_scans(config, train_pairs, val_pairs)
+
     train_set = SR_Dataset(config, train_pairs)
     val_set = SR_Dataset(config, val_pairs)
 
@@ -154,3 +156,27 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
             pairs_val.append(sample)
 
     return pairs_train, pairs_val
+
+
+def remove_empty_scans(config: dict, train_pairs: List[dict], val_pairs: List[dict]) -> (List[dict], List[dict]):
+    """
+    Function to remove training and validation pairs that are empty
+
+    Arguments:
+        config (dict):  configuration dict holding hyperparameters
+        train_pairs (List[dict]):  List holding training pairs
+        val_pairs (List[dict]) :  List holding validation pairs
+    """
+
+    if config['verbose']:
+        print('Removing empty slices')
+
+    for index, pair in enumerate(train_pairs):
+        if pair['source'].sum() < 10:
+            train_pairs.pop(index)
+
+    for index, pair in enumerate(val_pairs):
+        if pair['source'].sum() < 10:
+            val_pairs.pop(index)
+    
+    return train_pairs, val_pairs
