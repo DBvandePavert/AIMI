@@ -248,7 +248,9 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None):
             decoded_data = decoded_data.to(device)
             data_batch_loss = data_batch['target'].to(device)
             if loss_fn == 'ssim':
-                ssim(decoded_data, data_batch_loss)
+                loss = ssim(decoded_data, data_batch_loss)
+                loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
+                val_loss.append(loss.detach().cpu().numpy())
             else:
                 loss = loss_fn(decoded_data, data_batch_loss)
                 loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
