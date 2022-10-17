@@ -76,7 +76,9 @@ def read_files(config: dict) -> List[List]:
                 "source": sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f)),
                 "target": sitk.GetArrayFromImage(sitk.ReadImage('target_resolution/' + f))
             }
+
             data[i].append(patient)
+
 
     if config['verbose']:
         print(
@@ -107,11 +109,12 @@ def add_padding(config: dict, data: List) -> List[List]:
 
     padding = int((int(config['N']) - 1) / 2)
     padded = [[], [], []]
+    norm = [1936, 6207, 17274]
 
     for i in range(len(data)):
         for patient in data[i]:
-            patient['source'] = np.pad(patient['source'], ((padding, padding), (0, 0), (0, 0)), 'constant')
-            patient['target'] = np.pad(patient['target'], ((padding, padding), (0, 0), (0, 0)), 'constant')
+            patient['source'] = np.pad(patient['source'], ((padding, padding), (0, 0), (0, 0)), 'constant') / norm[i]
+            patient['target'] = np.pad(patient['target'], ((padding, padding), (0, 0), (0, 0)), 'constant') / norm[i]
             padded[i].append(patient)
 
     return padded
