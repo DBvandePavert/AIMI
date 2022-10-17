@@ -17,6 +17,7 @@ import yaml
 from utils import *
 from data import get_loaders
 from network import skip
+import lpips
 torch.nn.Module.add = add_module
 
 def run(data_config):
@@ -42,6 +43,7 @@ def run(data_config):
             'train_loss': [],
             'outputs_gif': [],
             'val_loss': [],
+            'val_loss_lpips': [],
             'output': [],
         }
 
@@ -82,6 +84,8 @@ def run(data_config):
         # Define loss functions
         loss_fn_train = torch.nn.MSELoss().to(device)
         loss_fn_test = torch.nn.MSELoss().to(device)
+        loss_fn_lpips = lpips.LPIPS(net='vgg')
+        loss_fn_lpips = loss_fn_lpips.to(device)
 
         # Initialize the networks
         net = skip(input_depth, img_shape, 
@@ -125,7 +129,9 @@ def run(data_config):
         
         # Validation loss
         val_loss = loss_fn_test(out, target_tensor)
+        val_loss_lpips = loss_fn_lpips(out, target_tensor)
         results['val_loss'] = val_loss.item()
+        results['val_loss_lpips'] = val_loss_lpips.item()
         results['output'] = out.cpu().permute(1,2,0).detach().numpy() / 255
 
         runs.append(results)
@@ -148,6 +154,7 @@ if __name__ == '__main__':
 
     runs = run(data_config)
     print("Validation loss", runs[0]['val_loss'])
+    print("Validation lpips loss", runs[0]['val_loss_lpips'])
     
     plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
 

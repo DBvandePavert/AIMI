@@ -9,6 +9,9 @@ import yaml
 from tqdm import tqdm
 from data import get_loaders
 
+import matplotlib.pyplot as plt
+import os
+import lpips
 
 class Encoder(nn.Module):
 
@@ -80,7 +83,7 @@ def run(model_config, data_config):
     train_loader, val_loader = get_loaders(data_config)
 
     loss_fn = torch.nn.MSELoss()
-
+    
     lr = 0.001
 
     # Set the random seed for reproducible results
@@ -102,13 +105,16 @@ def run(model_config, data_config):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     #print(f'Selected device: {device}')
 
+    loss_fn_lpips = lpips.LPIPS(net='vgg')
+    loss_fn_lpips = loss_fn_lpips.to(device)
+
     # Move both the encoder and the decoder to the selected device
     encoder.to(device)
     decoder.to(device)
 
     # Training cycle
     num_epochs = 3
-    history_da = {'train_loss': [], 'val_loss': []}
+    history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': []}
 
     # Pick out like 5 samples from the validation set
 
@@ -124,13 +130,21 @@ def run(model_config, data_config):
             loss_fn=loss_fn,
             optimizer=optim)
 
-        # Validation  (use the testing function)
+        #Validation  (use the testing function)
         val_loss = test_epoch_den(
             encoder=encoder,
             decoder=decoder,
             device=device,
             dataloader=val_loader,
             loss_fn=loss_fn)
+        
+        # Validation  with LPIPS instead of MSE (use the testing function)
+        val_loss_lpips = test_epoch_den(
+            encoder=encoder,
+            decoder=decoder,
+            device=device,
+            dataloader=val_loader,
+            loss_fn=loss_fn_lpips)
 
         # Once every 5 epochs or so get the output from those 5 picked samples
         # Save the output images to a folder
@@ -138,11 +152,14 @@ def run(model_config, data_config):
 
         # Print Validation loss
         history_da['train_loss'].append(train_loss)
-        history_da['val_loss'].append(val_loss)
-        print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss,
-                                                                              val_loss))
+        #history_da['val_loss'].append(val_loss)
+        history_da['val_loss_lpips'].append(val_loss_lpips)
+        print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f} \t val loss lpips {:.3f}'.format(epoch + 1, num_epochs, train_loss,
+                                                                             val_loss, val_loss_lpips))
 
     # Also save a graph of the loss over all epochs so we can see where it stop learning
+    train_loss_plot = plt.plot(list(range(1, num_epochs+1)), history_da['train_loss'], label='Trainingloss')
+    plt.savefig(final_directory + '/train_loss_plot.jpg')
 
 
 # Training function
@@ -206,6 +223,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn):
             data_batch_loss = data_batch['target'].to(device)
 
             loss = loss_fn(decoded_data, data_batch_loss)
+            loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
             val_loss.append(loss.detach().cpu().numpy())
 
     return np.mean(val_loss)
@@ -214,6 +232,9 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn):
 if __name__ == '__main__':
     model_params = sys.argv[1]
     data_params = sys.argv[2]
+
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory + "/output/").replace("\\", "/")
 
     model_config = yaml.safe_load(open(model_params))
     data_config = yaml.safe_load(open(data_params))
