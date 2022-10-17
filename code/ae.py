@@ -87,8 +87,6 @@ class Decoder(nn.Module):
 def run(model_config, data_config):
     train_loader, val_loader = get_loaders(data_config)
 
-    loss_fn = torch.nn.MSELoss()
-    
     lr = 0.001
 
     # Set the random seed for reproducible results
@@ -110,9 +108,14 @@ def run(model_config, data_config):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     #print(f'Selected device: {device}')
 
+    loss_fn = torch.nn.MSELoss()
+    loss_fn = loss_fn.to(device)
+
     loss_fn_lpips = lpips.LPIPS(net='vgg')
     loss_fn_lpips = loss_fn_lpips.to(device)
+
     loss_fn_ssim = SSIM(data_range=255, size_average=True, channel=1)
+    loss_fn_ssim = loss_fn_ssim.to(device)
 
     # Move both the encoder and the decoder to the selected device
     encoder.to(device)
