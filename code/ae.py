@@ -24,13 +24,32 @@ class Encoder(nn.Module):
         super().__init__()
 
         ### Convolutional section
+
+        # Option 1
+        # self.encoder_cnn = nn.Sequential(
+        #     nn.Conv2d(1, 8, 3, stride=2, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(8, 8, 3, stride=1, padding='same'),
+        #     nn.ReLU(),
+        #     nn.Conv2d(8, 16, 3, stride=2, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, stride=1, padding='same'),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 32, 3, stride=2, padding=0),
+        #     nn.ReLU()
+        # )
+
+        # Option 2
         self.encoder_cnn = nn.Sequential(
-            nn.Conv2d(1, 8, 3, stride=2, padding=1),
+            nn.Conv2d(1, 8, 3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(8, 16, 3, stride=2, padding=1),
+            nn.MaxPool2d(2),
+            nn.Conv2d(8, 16, 3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(16, 32, 3, stride=2, padding=0),
-            nn.ReLU()
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, 3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
         )
 
         ### Flatten layer
@@ -65,12 +84,30 @@ class Decoder(nn.Module):
         self.unflatten = nn.Unflatten(dim=1,
                                       unflattened_size=(32, 32, 24))
 
+        # Option 1
+        # self.decoder_conv = nn.Sequential(
+        #     nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, stride=1, padding='same'),
+        #     nn.ReLU(),
+        #     nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(8, 8, 3, stride=1, padding='same'),
+        #     nn.ReLU(),
+        #     nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
+        # )
+
+        # Option 2
         self.decoder_conv = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(32, 16, 3, stride=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
+            nn.Upsample(size=(63, 47)),
+            nn.ConvTranspose2d(16, 8, 3, stride=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
+            nn.Upsample(size=(127, 95)),
+            nn.ConvTranspose2d(8, 1, 3, stride=1),
+            nn.ReLU(),
+            nn.Upsample(size=(256, 192))
         )
 
     def forward(self, x):
@@ -78,8 +115,8 @@ class Decoder(nn.Module):
         x = self.decoder_lin(x)
         x = self.unflatten(x)
         x = self.decoder_conv(x)
+        # x = torch.sigmoid(x) # Is our input normalized to [0, 1]? in that case we should use this
 
-        # x = torch.sigmoid(x)
 
         return x
 
