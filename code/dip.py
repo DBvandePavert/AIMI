@@ -42,9 +42,9 @@ def run(data_config):
         results = {
             'train_loss': [],
             'outputs_gif': [],
-            'val_loss': [],
+            'val_loss': None,
             'val_loss_lpips': [],
-            'output': [],
+            'output': None,
         }
 
         # Get images
@@ -118,6 +118,7 @@ def run(data_config):
                 print("Loss", train_loss.item())
                 # results['outputs_gif'] = out.cpu().permute(1,2,0).detach().numpy()
                 # plt.imsave('testImg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0] * 255, cmap="gray")
+                # plt.imsave(final_directory + "/gifs" + f'/{epoch}.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
 
             # Set weights
             train_loss.backward()
@@ -149,6 +150,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
+        os.makedirs(final_directory + "/gifs")
 
     data_config = yaml.safe_load(open(data_params))
 

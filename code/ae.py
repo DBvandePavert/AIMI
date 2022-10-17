@@ -5,6 +5,9 @@ import torch.nn as nn
 
 import sys
 import yaml
+import time
+import os
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from data import get_loaders
@@ -136,7 +139,8 @@ def run(model_config, data_config):
             decoder=decoder,
             device=device,
             dataloader=val_loader,
-            loss_fn=loss_fn)
+            loss_fn=loss_fn,
+            epoch=epoch)
         
         # Validation  with LPIPS instead of MSE (use the testing function)
         val_loss_lpips = test_epoch_den(
@@ -199,7 +203,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
 
 
 # Testing function
-def test_epoch_den(encoder, decoder, device, dataloader, loss_fn):
+def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch):
 
     # Set evaluation mode for encoder and decoder
     encoder.eval()
@@ -226,6 +230,11 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn):
             loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
             val_loss.append(loss.detach().cpu().numpy())
 
+            if epoch % 100 == 0:
+                plt.imsave(final_directory + f'/{epoch}-output.jpg', decoded_data[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+                plt.imsave(final_directory + f'/{epoch}-target.jpg', data_batch_loss[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+
+
     return np.mean(val_loss)
 
 
@@ -233,8 +242,13 @@ if __name__ == '__main__':
     model_params = sys.argv[1]
     data_params = sys.argv[2]
 
+    dir_name = time.strftime("%Y%m%d-%H%M%S")
+
     current_directory = os.getcwd()
-    final_directory = os.path.join(current_directory + "/output/").replace("\\", "/")
+    final_directory = os.path.join(current_directory + "/output/", dir_name).replace("\\", "/")
+
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
 
     model_config = yaml.safe_load(open(model_params))
     data_config = yaml.safe_load(open(data_params))

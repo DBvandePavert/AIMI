@@ -33,10 +33,10 @@ class SR_Dataset(Dataset):
 def get_loaders(config):
     # Messy combination function, should rewrite
 
-    data = read_files(config)
+    data = read_files(config) 
+    data = remove_empty_scans(config, data)
     padded = add_padding(config, data)
     train_pairs, val_pairs = create_pairs(config, padded)
-    train_pairs, val_pairs = remove_empty_scans(config, train_pairs, val_pairs)
 
     train_set = SR_Dataset(config, train_pairs)
     val_set = SR_Dataset(config, val_pairs)
@@ -132,11 +132,10 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
 
     pairs_train, pairs_val = [], []
 
-    index_offset = int((config['N'] - 1) / 2)
-    index_end = int(data[0][0]['source'].shape[0] - index_offset)
-
     for set in data[:-1]:
         for patient in set:
+            index_offset = int((config['N'] - 1) / 2)
+            index_end = int(patient['source'].shape[0] - index_offset)
             for index in range(index_offset, index_end):
                 sample = {
                     # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset + 1)]],
@@ -146,6 +145,8 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
                 pairs_train.append(sample)
 
     for patient in data[-1]:
+        index_offset = int((config['N'] - 1) / 2)
+        index_end = int(patient['source'].shape[0] - index_offset)
         for index in range(index_offset, index_end):
             sample = {
                 # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset)]],
@@ -158,25 +159,22 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
     return pairs_train, pairs_val
 
 
-def remove_empty_scans(config: dict, train_pairs: List[dict], val_pairs: List[dict]) -> (List[dict], List[dict]):
+def remove_empty_scans(config: dict, data: List) -> List[List]:
     """
     Function to remove training and validation pairs that are empty
 
     Arguments:
         config (dict):  configuration dict holding hyperparameters
-        train_pairs (List[dict]):  List holding training pairs
-        val_pairs (List[dict]) :  List holding validation pairs
+        data (List) :  List holding data from the various sets
     """
-
+    
     if config['verbose']:
         print('Removing empty slices')
 
-    for index, pair in enumerate(train_pairs):
-        if pair['source'].sum() < 10:
-            train_pairs.pop(index)
+    for set in data:
+        for patient in set:
+            patient['target'] = patient['target'][~(patient['target'] < 20).all((1,2))]
+            patient['source'] = patient['source'][~(patient['source'] < 20).all((1,2))]
 
-    for index, pair in enumerate(val_pairs):
-        if pair['source'].sum() < 10:
-            val_pairs.pop(index)
-    
-    return train_pairs, val_pairs
+    return data
+   
