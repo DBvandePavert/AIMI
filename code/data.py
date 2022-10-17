@@ -176,10 +176,13 @@ def remove_empty_scans(config: dict, data: List, alpha: int = 200000) -> List[Li
         for patient in set:
             target_list = list(patient['target'])
             source_list = list(patient['source'])
+            indices_to_delete = []
             for index, scan in enumerate(target_list):
                 if scan.sum() < alpha:
-                    target_list.pop(index)
-                    source_list.pop(index)
+                    indices_to_delete.append(index)
+            for index in sorted(indices_to_delete, reverse=True):
+                del target_list[index]
+                del source_list[index]
             patient['target'] = np.array(target_list)
             patient['source'] = np.array(source_list)
 
