@@ -116,7 +116,7 @@ def run(model_config, data_config):
     decoder.to(device)
 
     # Training cycle
-    num_epochs = 3
+    num_epochs = 101
     history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': []}
 
     # Pick out like 5 samples from the validation set
@@ -156,13 +156,13 @@ def run(model_config, data_config):
 
         # Print Validation loss
         history_da['train_loss'].append(train_loss)
-        #history_da['val_loss'].append(val_loss)
+        history_da['val_loss'].append(val_loss)
         history_da['val_loss_lpips'].append(val_loss_lpips)
         print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f} \t val loss lpips {:.3f}'.format(epoch + 1, num_epochs, train_loss,
                                                                              val_loss, val_loss_lpips))
 
     # Also save a graph of the loss over all epochs so we can see where it stop learning
-    train_loss_plot = plt.plot(list(range(1, num_epochs+1)), history_da['train_loss'], label='Trainingloss')
+    plt.plot(list(range(1, num_epochs+1)), history_da['train_loss'], label='Trainingloss')
     plt.savefig(final_directory + '/train_loss_plot.jpg')
 
 
@@ -203,7 +203,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
 
 
 # Testing function
-def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch):
+def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None):
 
     # Set evaluation mode for encoder and decoder
     encoder.eval()
@@ -230,7 +230,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch):
             loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
             val_loss.append(loss.detach().cpu().numpy())
 
-            if epoch % 100 == 0:
+            if epoch and epoch % 10 == 0:
                 plt.imsave(final_directory + f'/{epoch}-output.jpg', decoded_data[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
                 plt.imsave(final_directory + f'/{epoch}-target.jpg', data_batch_loss[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 
