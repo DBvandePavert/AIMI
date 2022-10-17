@@ -159,13 +159,14 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
     return pairs_train, pairs_val
 
 
-def remove_empty_scans(config: dict, data: List) -> List[List]:
+def remove_empty_scans(config: dict, data: List, alpha: int = 200000) -> List[List]:
     """
     Function to remove training and validation pairs that are empty
 
     Arguments:
         config (dict):  configuration dict holding hyperparameters
         data (List) :  List holding data from the various sets
+        alpha (int) :  Cut-off value for removing empty slices
     """
     
     if config['verbose']:
@@ -173,8 +174,14 @@ def remove_empty_scans(config: dict, data: List) -> List[List]:
 
     for set in data:
         for patient in set:
-            patient['target'] = patient['target'][~(patient['target'] < 20).all((1,2))]
-            patient['source'] = patient['source'][~(patient['source'] < 20).all((1,2))]
+            target_list = list(patient['target'])
+            source_list = list(patient['source'])
+            for index, scan in enumerate(target_list):
+                if scan.sum() < alpha:
+                    target_list.pop(index)
+                    source_list.pop(index)
+            patient['target'] = np.array(target_list)
+            patient['source'] = np.array(source_list)
 
     return data
    
