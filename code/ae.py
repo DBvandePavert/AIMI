@@ -15,7 +15,7 @@ from data import get_loaders
 import matplotlib.pyplot as plt
 import os
 import lpips
-from skimage.metrics import structural_similarity as ssim
+from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 
 class Encoder(nn.Module):
@@ -112,15 +112,15 @@ def run(model_config, data_config):
 
     loss_fn_lpips = lpips.LPIPS(net='vgg')
     loss_fn_lpips = loss_fn_lpips.to(device)
-    loss_fn_ssim = 'ssim'
+    loss_fn_ssim = SSIM(data_range=255, size_average=True, channel=1)
 
     # Move both the encoder and the decoder to the selected device
     encoder.to(device)
     decoder.to(device)
 
     # Training cycle
-    num_epochs = 101
-    history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': []}
+    num_epochs = 3
+    history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': [], 'val_loss_ssim': []}
 
     # Pick out like 5 samples from the validation set
 
@@ -158,7 +158,8 @@ def run(model_config, data_config):
             decoder=decoder,
             device=device,
             dataloader=val_loader,
-            loss_fn=loss_fn_ssim)
+            loss_fn=loss_fn_ssim,
+            ssim=True)
 
         # Once every 5 epochs or so get the output from those 5 picked samples
         # Save the output images to a folder
@@ -169,8 +170,8 @@ def run(model_config, data_config):
         history_da['val_loss'].append(val_loss)
         history_da['val_loss_lpips'].append(val_loss_lpips)
         history_da['val_loss_ssim'].append(val_loss_ssim)
-        print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f} \t val loss lpips {:.3f}'.format(epoch + 1, num_epochs, train_loss,
-                                                                             val_loss, val_loss_lpips))
+        print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f} \t val loss lpips {:.3f} \t val loss ssim {:.3f}'.format(epoch + 1, num_epochs, train_loss,
+                                                                             val_loss, val_loss_lpips, val_loss_ssim))
 
     # Also save a graph of the loss over all epochs so we can see where it stop learning
     plt.plot(list(range(1, num_epochs+1)), history_da['train_loss'], label='Trainingloss')
@@ -225,7 +226,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
 
 
 # Testing function
-def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None):
+def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None, ssim = False):
 
     # Set evaluation mode for encoder and decoder
     encoder.eval()
@@ -246,10 +247,10 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None):
 
             # To device
             decoded_data = decoded_data.to(device)
-            data_batch_loss = data_batch['target'].to(device)
-            if loss_fn == 'ssim':
-                loss = ssim(decoded_data, data_batch_loss)
-                loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
+            data_batch_loss = data_batch['target'].to(device, dtype=torch.float32)
+            if ssim:
+                loss = 1 - loss_fn(decoded_data, data_batch_loss)
+                loss = torch.mean(loss)
                 val_loss.append(loss.detach().cpu().numpy())
             else:
                 loss = loss_fn(decoded_data, data_batch_loss)
