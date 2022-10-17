@@ -15,7 +15,7 @@ from data import get_loaders
 import matplotlib.pyplot as plt
 import os
 import lpips
-from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+from pytorch_msssim import SSIM
 
 
 class Encoder(nn.Module):
@@ -117,13 +117,16 @@ def run(model_config, data_config):
     loss_fn_ssim = SSIM(data_range=255, size_average=True, channel=1)
     loss_fn_ssim = loss_fn_ssim.to(device)
 
+    loss_fn_mae = torch.nn.L1Loss()
+    loss_fn_mae = loss_fn_mae.to(device)
+
     # Move both the encoder and the decoder to the selected device
     encoder.to(device)
     decoder.to(device)
 
     # Training cycle
     num_epochs = 3
-    history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': [], 'val_loss_ssim': []}
+    history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': [], 'val_loss_ssim': [], 'val_loss_mae': []}
 
     # Pick out like 5 samples from the validation set
 
@@ -147,15 +150,24 @@ def run(model_config, data_config):
             dataloader=val_loader,
             loss_fn=loss_fn,
             epoch=epoch)
+
+        #Validation  with MAE (use the testing function)
+        val_loss_mae = test_epoch_den(
+            encoder=encoder,
+            decoder=decoder,
+            device=device,
+            dataloader=val_loader,
+            loss_fn=loss_fn_mae)
         
-        # Validation  with LPIPS instead of MSE (use the testing function)
+        # Validation with LPIPS (use the testing function)
         val_loss_lpips = test_epoch_den(
             encoder=encoder,
             decoder=decoder,
             device=device,
             dataloader=val_loader,
             loss_fn=loss_fn_lpips)
-
+        
+        # Validation with SSIM
         val_loss_ssim = test_epoch_den(
             encoder=encoder,
             decoder=decoder,
@@ -171,25 +183,50 @@ def run(model_config, data_config):
         # Print Validation loss
         history_da['train_loss'].append(train_loss)
         history_da['val_loss'].append(val_loss)
+        history_da['val_loss_mae'].append(val_loss_mae)
         history_da['val_loss_lpips'].append(val_loss_lpips)
         history_da['val_loss_ssim'].append(val_loss_ssim)
-        print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f} \t val loss lpips {:.3f} \t val loss ssim {:.3f}'.format(epoch + 1, num_epochs, train_loss,
-                                                                             val_loss, val_loss_lpips, val_loss_ssim))
+        print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f} \t val loss lpips {:.3f} \t val loss ssim {:.3f} \t val loss mae {:.3f}'.format(
+            epoch + 1, num_epochs, train_loss,val_loss, val_loss_mae, val_loss_lpips, val_loss_ssim, val_loss_mae))
 
     # Also save a graph of the loss over all epochs so we can see where it stop learning
-    plt.plot(list(range(1, num_epochs+1)), history_da['train_loss'], label='Trainingloss')
+    plt.figure()
+    plt.plot(list(range(1, num_epochs+1)), history_da['train_loss'])
+    plt.title('Training loss')
+    plt.ylabel('MSE')
+    plt.xlabel('Number of epochs')
     plt.savefig(final_directory + '/train_loss_plot.jpg')
 
     #Plotting the validation loss for the MSE and saving it to the directory
-    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss'], label='ValidationlossMSE')
+    plt.figure()
+    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss'])
+    plt.title('Validation loss MSE')
+    plt.ylabel('MSE')
+    plt.xlabel('Number of epochs')
     plt.savefig(final_directory + '/val_loss_MSE_plot.jpg')
 
+    #Plotting the validation loss for the MAE and saving it to the directory
+    plt.figure()
+    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss_mae'])
+    plt.title('Validation loss MAE')
+    plt.ylabel('MAE')
+    plt.xlabel('Number of epochs')
+    plt.savefig(final_directory + '/val_loss_MAE_plot.jpg')
+
     #Plotting the validation loss for the LPIPS and saving it to the directory
-    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss_lpips'], label='ValidationlossLPIPS')
+    plt.figure()
+    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss_lpips'])
+    plt.title('Validation loss LPIPS')
+    plt.ylabel('LPIPS')
+    plt.xlabel('Number of epochs')
     plt.savefig(final_directory + '/val_loss_lpips_plot.jpg')
 
     #Plotting the validation loss for the SSIM and saving it to the directory
-    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss_ssim'], label='ValidationlossSSIM')
+    plt.figure()
+    plt.plot(list(range(1, num_epochs+1)), history_da['val_loss_ssim'])
+    plt.title('Validation loss SSIM')
+    plt.ylabel('SSIM')
+    plt.xlabel('Number of epochs')
     plt.savefig(final_directory + '/val_loss_SSIM_plot.jpg')
 
 # Training function
@@ -251,14 +288,14 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None, 
             # To device
             decoded_data = decoded_data.to(device)
             data_batch_loss = data_batch['target'].to(device, dtype=torch.float32)
+
+            # Loss functions
             if ssim:
                 loss = 1 - loss_fn(decoded_data, data_batch_loss)
-                loss = torch.mean(loss)
-                val_loss.append(loss.detach().cpu().numpy())
             else:
                 loss = loss_fn(decoded_data, data_batch_loss)
-                loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
-                val_loss.append(loss.detach().cpu().numpy())
+            loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
+            val_loss.append(loss.detach().cpu().numpy())
 
             if epoch and epoch % 10 == 0:
                 plt.imsave(final_directory + f'/{epoch}-output.jpg', decoded_data[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
