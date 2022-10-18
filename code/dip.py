@@ -18,6 +18,7 @@ from utils import *
 from data import get_loaders
 from network import skip
 import lpips
+from pytorch_msssim import SSIM
 torch.nn.Module.add = add_module
 
 def run(data_config):
@@ -45,6 +46,8 @@ def run(data_config):
             'outputs_gif': [],
             'val_loss': None,
             'val_loss_lpips': [],
+            'val_loss_ssim': [],
+            'val_loss_mae': [],
             'output': None,
         }
 
@@ -80,15 +83,19 @@ def run(data_config):
         target_tensor = target_tensor.to(device)
 
         # Sanity
-        plt.imsave(final_directory + '/masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
-        plt.imsave(final_directory + '/mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
-        plt.imsave(final_directory + '/target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        # plt.imsave(final_directory + '/masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        # plt.imsave(final_directory + '/mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        # plt.imsave(final_directory + '/target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 
         # Define loss functions
         loss_fn_train = torch.nn.MSELoss().to(device)
         loss_fn_test = torch.nn.MSELoss().to(device)
         loss_fn_lpips = lpips.LPIPS(net='vgg')
         loss_fn_lpips = loss_fn_lpips.to(device)
+        loss_fn_ssim = SSIM(data_range=255, size_average=True, channel=1)
+        loss_fn_ssim = loss_fn_ssim.to(device)
+        loss_fn_mae = torch.nn.L1Loss()
+        loss_fn_mae = loss_fn_mae.to(device)
 
         # Initialize the networks
         net = skip(input_depth, img_shape, 
@@ -132,10 +139,26 @@ def run(data_config):
             net_input = net_input + (1 / (30)) * torch.randn_like(net_input)
         
         # Validation loss
-        val_loss = loss_fn_test(out, target_tensor)
-        val_loss_lpips = loss_fn_lpips(out, target_tensor)
+        val_loss = loss_fn_test(out, target_tensor)      
         results['val_loss'] = val_loss.item()
+
+        val_loss_lpips = loss_fn_lpips(out, target_tensor)
         results['val_loss_lpips'] = val_loss_lpips.item()
+
+        if len(out.shape) == 3:
+            ssim_out = out.unsqueeze(0)
+        else:
+            ssim_out = out
+        if len(target_tensor.shape) == 3:
+            ssim_target_tensor = target_tensor.unsqueeze(0)
+        else:
+            ssim_target_tensor = target_tensor     
+        val_loss_ssim = loss_fn_ssim(ssim_out, ssim_target_tensor)
+        results['val_loss_ssim'] = val_loss_ssim.item()
+
+        val_loss_mae = loss_fn_mae(out, target_tensor)
+        results['val_loss_mae'] = val_loss_mae.item()
+
         results['output'] = out.cpu().permute(1,2,0).detach().numpy() / 255
 
         runs.append(results)
@@ -158,8 +181,20 @@ if __name__ == '__main__':
     data_config = yaml.safe_load(open(data_params))
 
     runs = run(data_config)
-    print("Validation loss", runs[0]['val_loss'])
-    print("Validation lpips loss", runs[0]['val_loss_lpips'])
+
+    validation_loss = []
+    validation_loss_lpips = []
+    validation_loss_ssim = []
+    validation_loss_mae = []
+    for run in runs:
+        validation_loss.append(run['val_loss'])
+        validation_loss_lpips.append(run['val_loss_lpips'])
+        validation_loss_ssim.append(run['val_loss_ssim'])
+        validation_loss_mae.append(run['val_loss_mae'])
+    print("Validation loss: ", np.mean(validation_loss))
+    print("Validation lpips loss: ", np.mean(validation_loss_lpips))
+    print("Validation ssim loss: ", np.mean(validation_loss_ssim))
+    print("Validation mae loss: ", np.mean(validation_loss_mae))
     
     plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
 
