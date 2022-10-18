@@ -11,6 +11,14 @@ import SimpleITK as sitk
 import os
 from typing import List, Tuple
 
+# SET_A_MAX = 0
+# SET_B_MAX = 0
+# SET_C_MAX = 0
+
+# SET_A_MAX_V = 0
+# SET_B_MAX_V = 0
+# SET_C_MAX_V = 0
+
 
 class SR_Dataset(Dataset):
     """
@@ -55,20 +63,54 @@ def normalize_values(f: string):
         f (string): filename of image file
 
     """
+    # global SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V
 
     source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
     target = sitk.GetArrayFromImage(sitk.ReadImage('target_resolution/' + f))
 
     if 'SET_A' in f:
-        source = source / 1936
-        target = target / 1936
+        if 'VSET' in f:
+            # if source.max() > SET_A_MAX_V:
+            #     SET_A_MAX_V = source.max()
+            source = source / 1936
+            target = target / 1936
+        else:
+            # if source.max() > SET_A_MAX:
+            #     SET_A_MAX = source.max()
+            source = source / 557.88635
+            target = target / 557.88635
     if 'SET_B' in f:
-        source = source / 6207
-        target = target / 6207
+        if 'VSET' in f:
+            # if source.max() > SET_B_MAX_V:
+            #     SET_B_MAX_V = source.max()
+            source = source / 6207
+            target = target / 6207
+        else:
+            # if source.max() > SET_B_MAX:
+            #     SET_B_MAX = source.max()
+            source = source / 2250.5593
+            target = target / 2250.5593
+        # source = source / 6207
+        # target = target / 6207
     if 'SET_C' in f:
-        source = source / 17274
-        target = target / 17274
-    
+        if 'VSET' in f:
+            # if source.max() > SET_C_MAX_V:
+            #     SET_C_MAX_V = source.max()
+            source = source / 17274
+            target = target / 17274
+        else:
+            # if source.max() > SET_C_MAX:
+            #     SET_C_MAX = source.max()
+            source = source / 0
+            target = target / 0
+        # source = source / 17274
+        # target = target / 17274
+
+    # print(SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V)
+
+    # source = source / 255
+    # target = target / 255
+
     return source, target
 
 
@@ -136,12 +178,11 @@ def add_padding(config: dict, data: List) -> List[List]:
 
     padding = int((int(config['N']) - 1) / 2)
     padded = [[], [], []]
-    norm = [1936, 6207, 17274]
 
     for i in range(len(data)):
         for patient in data[i]:
-            patient['source'] = np.pad(patient['source'], ((padding, padding), (0, 0), (0, 0)), 'constant') / norm[i]
-            patient['target'] = np.pad(patient['target'], ((padding, padding), (0, 0), (0, 0)), 'constant') / norm[i]
+            patient['source'] = np.pad(patient['source'], ((padding, padding), (0, 0), (0, 0)), 'constant')
+            patient['target'] = np.pad(patient['target'], ((padding, padding), (0, 0), (0, 0)), 'constant')
             padded[i].append(patient)
 
     return padded
@@ -189,7 +230,7 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
     return pairs_train, pairs_val
 
 
-def remove_empty_scans(config: dict, data: List, alpha: int = 25) -> List[List]:
+def remove_empty_scans(config: dict, data: List, alpha: int = 30) -> List[List]:
     """
     Function to remove training and validation pairs that are empty
 

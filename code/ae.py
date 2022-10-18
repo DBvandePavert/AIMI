@@ -94,29 +94,29 @@ class Decoder(nn.Module):
         self.unflatten = nn.Unflatten(dim=1,
                                       unflattened_size=(32, 32, 24))
 
-        # Option 1
-        self.decoder_conv = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
-        )
-
-        # Option 2
+        # # Option 1
         # self.decoder_conv = nn.Sequential(
         #     nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
         #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, stride=1, padding='same'),
-        #     nn.ReLU(),
         #     nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(8, 8, 3, stride=1, padding='same'),
         #     nn.ReLU(),
         #     nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
         # )
 
-        # Option 3
+        # Option 2
+        self.decoder_conv = nn.Sequential(
+            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 16, 3, stride=1, padding='same'),
+            nn.ReLU(),
+            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.Conv2d(8, 8, 3, stride=1, padding='same'),
+            nn.ReLU(),
+            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
+        )
+
+        # # Option 3
         # self.decoder_conv = nn.Sequential(
         #     nn.ConvTranspose2d(32, 16, 3, stride=1),
         #     nn.ReLU(),
@@ -134,7 +134,7 @@ class Decoder(nn.Module):
         x = self.decoder_lin(x)
         x = self.unflatten(x)
         x = self.decoder_conv(x)
-        # x = torch.sigmoid(x) # Is our input normalized to [0, 1]? in that case we should use this
+        x = torch.sigmoid(x) # Is our input normalized to [0, 1]? in that case we should use this
 
         return x
 
@@ -180,7 +180,7 @@ def run(model_config, data_config):
     decoder.to(device)
 
     # Training cycle
-    num_epochs = 3
+    num_epochs = 101
     history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': [], 'val_loss_ssim': [], 'val_loss_mae': []}
 
     # Pick out like 5 samples from the validation set

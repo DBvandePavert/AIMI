@@ -27,8 +27,8 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 10000 if torch.cuda.is_available() else 10
-    show_every = 500 if torch.cuda.is_available() else 5
+    num_epochs = 6000 if torch.cuda.is_available() else 10
+    show_every = 100 if torch.cuda.is_available() else 5
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -37,7 +37,7 @@ def run(data_config):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     for data_batch in iter(train_loader):
-        # data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
+        # data_batch = train_loader.dataset.__getitem__(180) # Comment for complete run
         
         
         # Define result dict
@@ -55,8 +55,8 @@ def run(data_config):
         source = data_batch["source"][0]
         target = data_batch["target"][0]
 
-        source = np.array(source.squeeze(0))
-        target = np.array(target.squeeze(0))
+        source = np.array(source.squeeze(0)) # Comment out for complete run
+        target = np.array(target.squeeze(0)) # Comment out for complete run
 
         # Create masked image
         masked = np.zeros((256,192), dtype = float)
@@ -78,14 +78,14 @@ def run(data_config):
         target_tensor = torch.tensor(target)
 
         # Move to device
-        masked_tensor = masked_tensor.to(device)
-        mask_tensor = mask_tensor.to(device)
-        target_tensor = target_tensor.to(device)
+        masked_tensor = masked_tensor.to(device, dtype=torch.float32)
+        mask_tensor = mask_tensor.to(device, dtype=torch.float32)
+        target_tensor = target_tensor.to(device, dtype=torch.float32)
 
         # Sanity
-        # plt.imsave(final_directory + '/masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
-        # plt.imsave(final_directory + '/mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
-        # plt.imsave(final_directory + '/target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '/masked.jpg', masked_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '/mask.jpg', mask_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+        plt.imsave(final_directory + '/target.jpg', target_tensor.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 
         # Define loss functions
         loss_fn_train = torch.nn.MSELoss().to(device)
@@ -128,7 +128,7 @@ def run(data_config):
                 print("Loss", train_loss.item())
                 # results['outputs_gif'] = out.cpu().permute(1,2,0).detach().numpy()
                 # plt.imsave('testImg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0] * 255, cmap="gray")
-                # plt.imsave(final_directory + "/gifs" + f'/{epoch}.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
+                plt.imsave(final_directory + "/gifs" + f'/{epoch}.jpg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 
             # Set weights
             train_loss.backward()
@@ -162,7 +162,7 @@ def run(data_config):
         results['output'] = out.cpu().permute(1,2,0).detach().numpy() / 255
 
         runs.append(results)
-        break # Comment for complete run
+        # break # Comment for complete run
 
     return runs
 
