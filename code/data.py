@@ -3,6 +3,7 @@ File to hold the data related functions
 
 """
 
+import string
 from torch.utils.data import Dataset, DataLoader
 import torch
 import numpy as np
@@ -46,6 +47,30 @@ def get_loaders(config):
 
     return train_loader, val_loader
 
+def normalize_values(f: string):
+    """
+    Function to normalize the data values between 0 and 1
+
+    Arguments:
+        f (string): filename of image file
+
+    """
+
+    source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
+    target = sitk.GetArrayFromImage(sitk.ReadImage('target_resolution/' + f))
+
+    if 'SET_A' in f:
+        source = source / 1936
+        target = target / 1936
+    if 'SET_B' in f:
+        source = source / 6207
+        target = target / 6207
+    if 'SET_C' in f:
+        source = source / 17274
+        target = target / 17274
+    
+    return source, target
+
 
 def read_files(config: dict) -> List[List]:
     """
@@ -72,9 +97,11 @@ def read_files(config: dict) -> List[List]:
 
     for i in range(len(data)):
         for f in sets[i]:
+            source, target = normalize_values(f)
+
             patient = {
-                "source": sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f)),
-                "target": sitk.GetArrayFromImage(sitk.ReadImage('target_resolution/' + f))
+                "source": source,
+                "target": target
             }
 
             data[i].append(patient)
@@ -162,7 +189,7 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
     return pairs_train, pairs_val
 
 
-def remove_empty_scans(config: dict, data: List, alpha: int = 200000) -> List[List]:
+def remove_empty_scans(config: dict, data: List, alpha: int = 25) -> List[List]:
     """
     Function to remove training and validation pairs that are empty
 

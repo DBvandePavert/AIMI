@@ -27,7 +27,7 @@ def run(data_config):
     input_depth = 32
     img_shape = 1
     num_epochs = 10000 if torch.cuda.is_available() else 10
-    show_every = 500 if torch.cuda.is_available() else 1
+    show_every = 500 if torch.cuda.is_available() else 5
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -36,7 +36,8 @@ def run(data_config):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     for data_batch in iter(train_loader):
-        data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
+        # data_batch = train_loader.dataset.__getitem__(150) # Comment for complete run
+        
         
         # Define result dict
         results = {
@@ -51,9 +52,12 @@ def run(data_config):
         source = data_batch["source"][0]
         target = data_batch["target"][0]
 
+        source = np.array(source.squeeze(0))
+        target = np.array(target.squeeze(0))
+
         # Create masked image
         masked = np.zeros((256,192), dtype = float)
-        masked[::,1::2] = source / 255
+        masked[::,1::2] = source
         masked = np.expand_dims(masked, axis=0)
 
         # Create mask
@@ -63,7 +67,6 @@ def run(data_config):
         mask = np.expand_dims(mask, axis=0)
 
         # Prepare target
-        target = target / 255
         target = np.expand_dims(target, axis=0)
 
         # Create tensors
