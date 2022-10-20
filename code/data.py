@@ -101,7 +101,6 @@ def normalize_values(f: string, split_vset = False):
 
     if 'SET_A' in f:
         if 'VSET' in f and split_vset:
-            print("VSET")
             source = source / SET_A_MAX_V
             target = target / SET_A_MAX_V
         else:
@@ -109,7 +108,6 @@ def normalize_values(f: string, split_vset = False):
             target = target / SET_A_MAX
     if 'SET_B' in f:
         if 'VSET' in f and split_vset:
-            print("VSET")
             source = source / SET_B_MAX_V
             target = target / SET_B_MAX_V
         else:
@@ -117,7 +115,6 @@ def normalize_values(f: string, split_vset = False):
             target = target / SET_B_MAX
     if 'SET_C' in f:
         if 'VSET' in f and split_vset:
-            print("VSET")
             source = source / SET_C_MAX_V
             target = target / SET_C_MAX_V
         else:
