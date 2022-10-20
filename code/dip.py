@@ -27,14 +27,15 @@ def run(data_config):
     lr = 0.001
     input_depth = 32
     img_shape = 1
-    num_epochs = 6000 if torch.cuda.is_available() else 10
-    show_every = 100 if torch.cuda.is_available() else 5
+    num_epochs = 6000 if torch.cuda.is_available() else 2
+    show_every = 100 if torch.cuda.is_available() else 1
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
 
     # Check if the GPU is available
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    loss_fn_lpips = lpips.LPIPS(net='vgg')
 
     for data_batch in iter(train_loader):
         # data_batch = train_loader.dataset.__getitem__(180) # Comment for complete run
@@ -54,6 +55,8 @@ def run(data_config):
         # Get images
         source = data_batch["source"][0]
         target = data_batch["target"][0]
+
+        # plt.imsave(final_directory + '/source.jpg', source, cmap="gray")
 
         source = np.array(source.squeeze(0)) # Comment out for complete run
         target = np.array(target.squeeze(0)) # Comment out for complete run
@@ -90,7 +93,6 @@ def run(data_config):
         # Define loss functions
         loss_fn_train = torch.nn.MSELoss().to(device)
         loss_fn_test = torch.nn.MSELoss().to(device)
-        loss_fn_lpips = lpips.LPIPS(net='vgg')
         loss_fn_lpips = loss_fn_lpips.to(device)
         loss_fn_ssim = SSIM(data_range=255, size_average=True, channel=1)
         loss_fn_ssim = loss_fn_ssim.to(device)
@@ -128,7 +130,7 @@ def run(data_config):
                 print("Loss", train_loss.item())
                 # results['outputs_gif'] = out.cpu().permute(1,2,0).detach().numpy()
                 # plt.imsave('testImg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0] * 255, cmap="gray")
-                plt.imsave(final_directory + "/gifs" + f'/{epoch}.jpg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
+                # plt.imsave(final_directory + "/gifs" + f'/{epoch}.jpg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 
             # Set weights
             train_loss.backward()
@@ -196,6 +198,6 @@ if __name__ == '__main__':
     print("Validation ssim loss: ", np.mean(validation_loss_ssim))
     print("Validation mae loss: ", np.mean(validation_loss_mae))
     
-    plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
+    # plt.imsave(final_directory + '/final.jpg', (runs[0]['output'])[:, :, 0], cmap="gray")
 
 

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -180,7 +181,7 @@ def run(model_config, data_config):
     decoder.to(device)
 
     # Training cycle
-    num_epochs = 101
+    num_epochs = 5
     history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': [], 'val_loss_ssim': [], 'val_loss_mae': []}
 
     # Pick out like 5 samples from the validation set
@@ -284,6 +285,9 @@ def run(model_config, data_config):
     plt.xlabel('Number of epochs')
     plt.savefig(final_directory + '/val_loss_SSIM_plot.jpg')
 
+    result_df = pd.DataFrame(history_da)
+    result_df.to_feather(final_directory + "results.feather")
+
 # Training function
 def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
 
@@ -295,7 +299,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
     for data_batch in tqdm(iter(dataloader)):
 
         # Move tensor to the proper device
-        image_batch = data_batch['source'].to(device)
+        image_batch = data_batch['source'].to(device, dtype=torch.float32)
 
         # Encode data
         encoded_data = encoder(image_batch)
@@ -304,8 +308,8 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
         decoded_data = decoder(encoded_data)
 
         # To device
-        decoded_data = decoded_data.to(device)
-        data_batch_loss = data_batch['target'].to(device)
+        decoded_data = decoded_data.to(device, dtype=torch.float32)
+        data_batch_loss = data_batch['target'].to(device, dtype=torch.float32)
 
         # Evaluate loss
         loss = loss_fn(decoded_data, data_batch_loss)
@@ -332,7 +336,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None, 
         for data_batch in tqdm(iter(dataloader)):
 
             # Move tensor to the proper device
-            image_batch = data_batch['source'].to(device)
+            image_batch = data_batch['source'].to(device, dtype=torch.float32)
 
             # Encode data
             encoded_data = encoder(image_batch)
@@ -341,7 +345,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None, 
             decoded_data = decoder(encoded_data)
 
             # To device
-            decoded_data = decoded_data.to(device)
+            decoded_data = decoded_data.to(device, dtype=torch.float32)
             data_batch_loss = data_batch['target'].to(device, dtype=torch.float32)
 
             # Loss functions

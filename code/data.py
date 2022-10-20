@@ -11,13 +11,13 @@ import SimpleITK as sitk
 import os
 from typing import List, Tuple
 
-# SET_A_MAX = 0
-# SET_B_MAX = 0
-# SET_C_MAX = 0
+SET_A_MAX = 0
+SET_B_MAX = 0
+SET_C_MAX = 0
 
-# SET_A_MAX_V = 0
-# SET_B_MAX_V = 0
-# SET_C_MAX_V = 0
+SET_A_MAX_V = 0
+SET_B_MAX_V = 0
+SET_C_MAX_V = 0
 
 
 class SR_Dataset(Dataset):
@@ -55,7 +55,38 @@ def get_loaders(config):
 
     return train_loader, val_loader
 
-def normalize_values(f: string):
+def calculate_max_pixel_values(f: string):
+    """
+    Function to calculate the max pixel values of the sets in the data
+
+    Arguments:
+        f (string): filename of image file
+
+    """
+    global SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V
+
+    source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
+
+    if 'SET_A' in f:
+        if 'VSET' in f:
+            if source.max() > SET_A_MAX_V:
+                SET_A_MAX_V = source.max()
+        if source.max() > SET_A_MAX:
+            SET_A_MAX = source.max()
+    if 'SET_B' in f:
+        if 'VSET' in f:
+            if source.max() > SET_B_MAX_V:
+                SET_B_MAX_V = source.max()
+        if source.max() > SET_B_MAX:
+            SET_B_MAX = source.max()
+    if 'SET_C' in f:
+        if 'VSET' in f:
+            if source.max() > SET_C_MAX_V:
+                SET_C_MAX_V = source.max()
+        if source.max() > SET_C_MAX:
+            SET_C_MAX = source.max()
+
+def normalize_values(f: string, split_vset = False):
     """
     Function to normalize the data values between 0 and 1
 
@@ -63,53 +94,35 @@ def normalize_values(f: string):
         f (string): filename of image file
 
     """
-    # global SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V
+    global SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V
 
     source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
     target = sitk.GetArrayFromImage(sitk.ReadImage('target_resolution/' + f))
 
     if 'SET_A' in f:
-        if 'VSET' in f:
-            # if source.max() > SET_A_MAX_V:
-            #     SET_A_MAX_V = source.max()
-            source = source / 1936
-            target = target / 1936
+        if 'VSET' in f and split_vset:
+            print("VSET")
+            source = source / SET_A_MAX_V
+            target = target / SET_A_MAX_V
         else:
-            # if source.max() > SET_A_MAX:
-            #     SET_A_MAX = source.max()
-            source = source / 557.88635
-            target = target / 557.88635
+            source = source / SET_A_MAX
+            target = target / SET_A_MAX
     if 'SET_B' in f:
-        if 'VSET' in f:
-            # if source.max() > SET_B_MAX_V:
-            #     SET_B_MAX_V = source.max()
-            source = source / 6207
-            target = target / 6207
+        if 'VSET' in f and split_vset:
+            print("VSET")
+            source = source / SET_B_MAX_V
+            target = target / SET_B_MAX_V
         else:
-            # if source.max() > SET_B_MAX:
-            #     SET_B_MAX = source.max()
-            source = source / 2250.5593
-            target = target / 2250.5593
-        # source = source / 6207
-        # target = target / 6207
+            source = source / SET_B_MAX
+            target = target / SET_B_MAX
     if 'SET_C' in f:
-        if 'VSET' in f:
-            # if source.max() > SET_C_MAX_V:
-            #     SET_C_MAX_V = source.max()
-            source = source / 17274
-            target = target / 17274
+        if 'VSET' in f and split_vset:
+            print("VSET")
+            source = source / SET_C_MAX_V
+            target = target / SET_C_MAX_V
         else:
-            # if source.max() > SET_C_MAX:
-            #     SET_C_MAX = source.max()
-            source = source / 0
-            target = target / 0
-        # source = source / 17274
-        # target = target / 17274
-
-    # print(SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V)
-
-    # source = source / 255
-    # target = target / 255
+            source = source / SET_C_MAX
+            target = target / SET_C_MAX
 
     return source, target
 
@@ -125,21 +138,74 @@ def read_files(config: dict) -> List[List]:
     if config['verbose']:
         print('Loading data')
 
+    # Get train files
     os.chdir(config['path_train'])
     os.chdir('source_resolution')
     files = os.listdir()
     os.chdir('..')
+    os.chdir('..')
+    os.chdir('..')
+    os.chdir('..')
 
-    set_A = [f for f in files if ('SET_A' in f) and ('VSET' not in f)]
-    set_B = [f for f in files if ('SET_B' in f) and ('VSET' not in f)]
-    set_V = [f for f in files if 'VSET' in f]
+    # Create train set
+    train_set = [f for f in files]
 
-    data = [[], [], []]
-    sets = [set_A, set_B, set_V]
+    # Get test files
+    os.chdir(config['path_test'])
+    os.chdir('source_resolution')
+    files = os.listdir()
+    os.chdir('..')
 
+
+    # Create test set
+    test_set = [f for f in files]
+
+    # Create data sets
+    data = [[], []]
+    sets = [train_set, test_set]
+
+
+    # Calculate max pixel values per set (per MRI machine type)
     for i in range(len(data)):
+        # Go back to correct directory
+        os.chdir('..')
+        os.chdir('..')
+        os.chdir('..')
+
+        # Set correct working directory
+        if i == 0:
+            os.chdir(config['path_train'])
+        else:
+            os.chdir(config['path_test'])
+
         for f in sets[i]:
-            source, target = normalize_values(f)
+            calculate_max_pixel_values(f)
+
+    if config['verbose']:
+        print(f"Calculated max values for normalisation: {SET_A_MAX, SET_B_MAX, SET_C_MAX} vset: {SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V}")
+    if config['split_vset']:
+        print("Vset values are used")
+        split_Vset = True
+    else:
+        print("Vset values are not used")
+        split_vset = False
+
+    # Normalize values of scans according to max pizxel values
+    for i in range(len(data)):
+        # Go back to correct directory
+        os.chdir('..')
+        os.chdir('..')
+        os.chdir('..')
+    
+        # Set correct working directory
+        if i == 0:
+            os.chdir(config['path_train'])
+        else:
+            os.chdir(config['path_test'])
+        
+        # Normalize and add scans to datasets
+        for f in sets[i]:
+            source, target = normalize_values(f, split_vset)
 
             patient = {
                 "source": source,
@@ -153,9 +219,8 @@ def read_files(config: dict) -> List[List]:
         print(
             f'''
         Found data:
-            - set A: {len(data[0])}
-            - set B: {len(data[1])}
-            - set V: {len(data[2])}
+            - set train: {len(data[0])}
+            - set test: {len(data[1])}
         '''
         )
 
@@ -177,7 +242,7 @@ def add_padding(config: dict, data: List) -> List[List]:
         return data
 
     padding = int((int(config['N']) - 1) / 2)
-    padded = [[], [], []]
+    padded = [[], []]
 
     for i in range(len(data)):
         for patient in data[i]:
@@ -203,19 +268,18 @@ def create_pairs(config: dict, data: List) -> (List[dict], List[dict]):
 
     pairs_train, pairs_val = [], []
 
-    for set in data[:-1]:
-        for patient in set:
-            index_offset = int((config['N'] - 1) / 2)
-            index_end = int(patient['source'].shape[0] - index_offset)
-            for index in range(index_offset, index_end):
-                sample = {
-                    # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset + 1)]],
-                    'source': np.expand_dims(patient['source'][index], 0),
-                    'target': np.expand_dims(patient['target'][index], 0)
-                }
-                pairs_train.append(sample)
+    for patient in data[0]:
+        index_offset = int((config['N'] - 1) / 2)
+        index_end = int(patient['source'].shape[0] - index_offset)
+        for index in range(index_offset, index_end):
+            sample = {
+                # 'source': [s for s in patient['source'][int(index - index_offset): int(index + index_offset + 1)]],
+                'source': np.expand_dims(patient['source'][index], 0),
+                'target': np.expand_dims(patient['target'][index], 0)
+            }
+            pairs_train.append(sample)
 
-    for patient in data[-1]:
+    for patient in data[1]:
         index_offset = int((config['N'] - 1) / 2)
         index_end = int(patient['source'].shape[0] - index_offset)
         for index in range(index_offset, index_end):
