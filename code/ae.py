@@ -286,7 +286,7 @@ def run(model_config, data_config):
     plt.savefig(final_directory + '/val_loss_SSIM_plot.jpg')
 
     result_df = pd.DataFrame(history_da)
-    result_df.to_feather(final_directory + "results.feather")
+    result_df.to_feather(final_directory + "/results.feather")
 
 # Training function
 def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer):
