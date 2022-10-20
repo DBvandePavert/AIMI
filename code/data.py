@@ -55,7 +55,7 @@ def get_loaders(config):
 
     return train_loader, val_loader
 
-def calculate_max_pixel_values(f: string):
+def calculate_max_pixel_values(f: string, split_vset = False):
     """
     Function to calculate the max pixel values of the sets in the data
 
@@ -68,23 +68,26 @@ def calculate_max_pixel_values(f: string):
     source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
 
     if 'SET_A' in f:
-        if 'VSET' in f:
+        if 'VSET' in f and split_vset:
             if source.max() > SET_A_MAX_V:
                 SET_A_MAX_V = source.max()
-        if source.max() > SET_A_MAX:
-            SET_A_MAX = source.max()
+        else:
+            if source.max() > SET_A_MAX:
+                SET_A_MAX = source.max()
     if 'SET_B' in f:
-        if 'VSET' in f:
+        if 'VSET' in f and split_vset:
             if source.max() > SET_B_MAX_V:
                 SET_B_MAX_V = source.max()
-        if source.max() > SET_B_MAX:
-            SET_B_MAX = source.max()
+        else:
+            if source.max() > SET_B_MAX:
+                SET_B_MAX = source.max()
     if 'SET_C' in f:
-        if 'VSET' in f:
+        if 'VSET' in f and split_vset:
             if source.max() > SET_C_MAX_V:
                 SET_C_MAX_V = source.max()
-        if source.max() > SET_C_MAX:
-            SET_C_MAX = source.max()
+        else:
+            if source.max() > SET_C_MAX:
+                SET_C_MAX = source.max()
 
 def normalize_values(f: string, split_vset = False):
     """
@@ -161,6 +164,14 @@ def read_files(config: dict) -> List[List]:
     data = [[], []]
     sets = [train_set, test_set]
 
+    if config['split_vset']:
+        print("Vset values are used")
+        split_vset = True
+    else:
+        print("Vset values are not used")
+        split_vset = False
+
+
 
     # Calculate max pixel values per set (per MRI machine type)
     for i in range(len(data)):
@@ -176,17 +187,11 @@ def read_files(config: dict) -> List[List]:
             os.chdir(config['path_test'])
 
         for f in sets[i]:
-            calculate_max_pixel_values(f)
+            calculate_max_pixel_values(f, split_vset)
 
     if config['verbose']:
         print(f"Calculated max values for normalisation: {SET_A_MAX, SET_B_MAX, SET_C_MAX} vset: {SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V}")
-    if config['split_vset']:
-        print("Vset values are used")
-        split_vset = True
-    else:
-        print("Vset values are not used")
-        split_vset = False
-
+   
     # Normalize values of scans according to max pizxel values
     for i in range(len(data)):
         # Go back to correct directory
