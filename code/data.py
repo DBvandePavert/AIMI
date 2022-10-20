@@ -182,7 +182,7 @@ def read_files(config: dict) -> List[List]:
         print(f"Calculated max values for normalisation: {SET_A_MAX, SET_B_MAX, SET_C_MAX} vset: {SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V}")
     if config['split_vset']:
         print("Vset values are used")
-        split_Vset = True
+        split_vset = True
     else:
         print("Vset values are not used")
         split_vset = False
