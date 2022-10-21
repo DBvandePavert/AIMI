@@ -1,4 +1,4 @@
-# AIMI
+# AIMI Super Resolutionists 2
 Repo for the University of Amsterdam course "Artificial intelligence for medical imaging"
 
 ## Contributors
