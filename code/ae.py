@@ -26,17 +26,17 @@ class Encoder(nn.Module):
 
         ### Convolutional section
 
-        # Option 1
-        self.encoder_cnn = nn.Sequential(
-            nn.Conv2d(1, 8, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(8, 16, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 32, 3, stride=2, padding=0),
-            nn.ReLU()
-        )
+        # # Option 1
+        # self.encoder_cnn = nn.Sequential(
+        #     nn.Conv2d(1, 8, 3, stride=2, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(8, 16, 3, stride=2, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 32, 3, stride=2, padding=0),
+        #     nn.ReLU()
+        # )
 
-        # Option 2
+        # # Option 2
         # self.encoder_cnn = nn.Sequential(
         #     nn.Conv2d(1, 8, 3, stride=2, padding=1),
         #     nn.ReLU(),
@@ -51,17 +51,17 @@ class Encoder(nn.Module):
         # )
 
         # Option 3
-        # self.encoder_cnn = nn.Sequential(
-        #     nn.Conv2d(1, 8, 3, stride=1, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2),
-        #     nn.Conv2d(8, 16, 3, stride=1, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2),
-        #     nn.Conv2d(16, 32, 3, stride=1, padding=0),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2)
-        # )
+        self.encoder_cnn = nn.Sequential(
+            nn.Conv2d(1, 8, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(8, 16, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, 3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+        )
 
         ### Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
@@ -96,6 +96,7 @@ class Decoder(nn.Module):
                                       unflattened_size=(32, 32, 24))
 
         # # Option 1
+        # print("Using option 1")
         # self.decoder_conv = nn.Sequential(
         #     nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
         #     nn.ReLU(),
@@ -104,31 +105,33 @@ class Decoder(nn.Module):
         #     nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
         # )
 
-        # Option 2
-        self.decoder_conv = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, 3, stride=1, padding='same'),
-            nn.ReLU(),
-            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.Conv2d(8, 8, 3, stride=1, padding='same'),
-            nn.ReLU(),
-            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
-        )
-
-        # # Option 3
+        # # Option 2
+        # print("Using option 2")
         # self.decoder_conv = nn.Sequential(
-        #     nn.ConvTranspose2d(32, 16, 3, stride=1),
+        #     nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
         #     nn.ReLU(),
-        #     nn.Upsample(size=(63, 47)),
-        #     nn.ConvTranspose2d(16, 8, 3, stride=1),
+        #     nn.Conv2d(16, 16, 3, stride=1, padding='same'),
         #     nn.ReLU(),
-        #     nn.Upsample(size=(127, 95)),
-        #     nn.ConvTranspose2d(8, 1, 3, stride=1),
+        #     nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),
         #     nn.ReLU(),
-        #     nn.Upsample(size=(256, 192))
+        #     nn.Conv2d(8, 8, 3, stride=1, padding='same'),
+        #     nn.ReLU(),
+        #     nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)
         # )
+
+        # Option 3
+        print("Using option 3")
+        self.decoder_conv = nn.Sequential(
+            nn.ConvTranspose2d(32, 16, 3, stride=1),
+            nn.ReLU(),
+            nn.Upsample(size=(63, 47)),
+            nn.ConvTranspose2d(16, 8, 3, stride=1),
+            nn.ReLU(),
+            nn.Upsample(size=(127, 95)),
+            nn.ConvTranspose2d(8, 1, 3, stride=1),
+            nn.ReLU(),
+            nn.Upsample(size=(256, 192))
+        )
 
     def forward(self, x):
         x = x.float()
@@ -181,7 +184,7 @@ def run(model_config, data_config):
     decoder.to(device)
 
     # Training cycle
-    num_epochs = 5
+    num_epochs = 10
     history_da = {'train_loss': [], 'val_loss': [], 'val_loss_lpips': [], 'val_loss_ssim': [], 'val_loss_mae': []}
 
     # Pick out like 5 samples from the validation set
@@ -356,7 +359,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, epoch = None, 
             loss = torch.mean(loss) # If using LPIPS the loss returns an array, so take the mean
             val_loss.append(loss.detach().cpu().numpy())
 
-            if epoch and epoch % 10 == 0:
+            if epoch and epoch % 2 == 0:
                 plt.imsave(final_directory + f'/{epoch}-output.jpg', decoded_data[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
                 plt.imsave(final_directory + f'/{epoch}-target.jpg', data_batch_loss[0].cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
 

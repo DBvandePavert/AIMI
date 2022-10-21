@@ -6,9 +6,6 @@ config_name: "dip_1"
 path_train: "data/data_train_plus_test_sourceres/dip/"
 path_test: "data/data_train_plus_test_sourceres/dip/"
 
-# Split max pixel values for vset
-split_vset: 0
-
 # Hyper params
 N: 1
 batchsize: 1

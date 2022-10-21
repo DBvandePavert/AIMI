@@ -14,12 +14,6 @@ from typing import List, Tuple
 SET_A_MAX = 0
 SET_B_MAX = 0
 SET_C_MAX = 0
-
-SET_A_MAX_V = 0
-SET_B_MAX_V = 0
-SET_C_MAX_V = 0
-
-
 class SR_Dataset(Dataset):
     """
     Dataset object returning data pairs
@@ -55,7 +49,7 @@ def get_loaders(config):
 
     return train_loader, val_loader
 
-def calculate_max_pixel_values(f: string, split_vset = False):
+def calculate_max_pixel_values(f: string):
     """
     Function to calculate the max pixel values of the sets in the data
 
@@ -63,33 +57,21 @@ def calculate_max_pixel_values(f: string, split_vset = False):
         f (string): filename of image file
 
     """
-    global SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V
+    global SET_A_MAX, SET_B_MAX, SET_C_MAX
 
     source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
 
     if 'SET_A' in f:
-        if 'VSET' in f and split_vset:
-            if source.max() > SET_A_MAX_V:
-                SET_A_MAX_V = source.max()
-        else:
-            if source.max() > SET_A_MAX:
-                SET_A_MAX = source.max()
+        if source.max() > SET_A_MAX:
+            SET_A_MAX = source.max()
     if 'SET_B' in f:
-        if 'VSET' in f and split_vset:
-            if source.max() > SET_B_MAX_V:
-                SET_B_MAX_V = source.max()
-        else:
-            if source.max() > SET_B_MAX:
-                SET_B_MAX = source.max()
+        if source.max() > SET_B_MAX:
+            SET_B_MAX = source.max()
     if 'SET_C' in f:
-        if 'VSET' in f and split_vset:
-            if source.max() > SET_C_MAX_V:
-                SET_C_MAX_V = source.max()
-        else:
-            if source.max() > SET_C_MAX:
-                SET_C_MAX = source.max()
+        if source.max() > SET_C_MAX:
+            SET_C_MAX = source.max()
 
-def normalize_values(f: string, split_vset = False):
+def normalize_values(f: string):
     """
     Function to normalize the data values between 0 and 1
 
@@ -97,32 +79,20 @@ def normalize_values(f: string, split_vset = False):
         f (string): filename of image file
 
     """
-    global SET_A_MAX, SET_B_MAX, SET_C_MAX, SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V
+    global SET_A_MAX, SET_B_MAX, SET_C_MAX
 
     source = sitk.GetArrayFromImage(sitk.ReadImage('source_resolution/' + f))
     target = sitk.GetArrayFromImage(sitk.ReadImage('target_resolution/' + f))
 
     if 'SET_A' in f:
-        if 'VSET' in f and split_vset:
-            source = source / SET_A_MAX_V
-            target = target / SET_A_MAX_V
-        else:
-            source = source / SET_A_MAX
-            target = target / SET_A_MAX
+        source = source / SET_A_MAX
+        target = target / SET_A_MAX
     if 'SET_B' in f:
-        if 'VSET' in f and split_vset:
-            source = source / SET_B_MAX_V
-            target = target / SET_B_MAX_V
-        else:
-            source = source / SET_B_MAX
-            target = target / SET_B_MAX
+        source = source / SET_B_MAX
+        target = target / SET_B_MAX
     if 'SET_C' in f:
-        if 'VSET' in f and split_vset:
-            source = source / SET_C_MAX_V
-            target = target / SET_C_MAX_V
-        else:
-            source = source / SET_C_MAX
-            target = target / SET_C_MAX
+        source = source / SET_C_MAX
+        target = target / SET_C_MAX
 
     return source, target
 
@@ -164,15 +134,6 @@ def read_files(config: dict) -> List[List]:
     data = [[], []]
     sets = [train_set, test_set]
 
-    if config['split_vset']:
-        print("Vset values are used")
-        split_vset = True
-    else:
-        print("Vset values are not used")
-        split_vset = False
-
-
-
     # Calculate max pixel values per set (per MRI machine type)
     for i in range(len(data)):
         # Go back to correct directory
@@ -187,10 +148,10 @@ def read_files(config: dict) -> List[List]:
             os.chdir(config['path_test'])
 
         for f in sets[i]:
-            calculate_max_pixel_values(f, split_vset)
+            calculate_max_pixel_values(f)
 
     if config['verbose']:
-        print(f"Calculated max values for normalisation: {SET_A_MAX, SET_B_MAX, SET_C_MAX} vset: {SET_A_MAX_V, SET_B_MAX_V, SET_C_MAX_V}")
+        print(f"Calculated max values for normalisation: {SET_A_MAX, SET_B_MAX, SET_C_MAX}")
    
     # Normalize values of scans according to max pizxel values
     for i in range(len(data)):
@@ -207,7 +168,7 @@ def read_files(config: dict) -> List[List]:
         
         # Normalize and add scans to datasets
         for f in sets[i]:
-            source, target = normalize_values(f, split_vset)
+            source, target = normalize_values(f)
 
             patient = {
                 "source": source,
