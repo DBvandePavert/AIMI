@@ -19,6 +19,8 @@ from data import get_loaders
 from network import skip
 import lpips
 from pytorch_msssim import SSIM
+import pandas as pd
+
 torch.nn.Module.add = add_module
 
 def run(data_config):
@@ -28,7 +30,7 @@ def run(data_config):
     input_depth = 32
     img_shape = 1
     num_epochs = 6000 if torch.cuda.is_available() else 2
-    show_every = 100 if torch.cuda.is_available() else 1
+    # show_every = 5999 if torch.cuda.is_available() else 1
 
     # Set the random seed for reproducible results
     torch.manual_seed(0)
@@ -125,9 +127,9 @@ def run(data_config):
             train_loss = loss_fn_train(out * mask_tensor, masked_tensor)
             results['train_loss'].append(train_loss.item())
 
-            if epoch % show_every == 0:
-                print('EPOCH %d/%d' % (epoch + 1, num_epochs))
-                print("Loss", train_loss.item())
+            # if epoch % show_every == 0:
+            #     print('EPOCH %d/%d' % (epoch + 1, num_epochs))
+            #     print("Loss", train_loss.item())
                 # results['outputs_gif'] = out.cpu().permute(1,2,0).detach().numpy()
                 # plt.imsave('testImg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0] * 255, cmap="gray")
                 # plt.imsave(final_directory + "/gifs" + f'/{epoch}.jpg', out.cpu().permute(1,2,0).detach().numpy()[:,:,0], cmap="gray")
@@ -161,9 +163,11 @@ def run(data_config):
         val_loss_mae = loss_fn_mae(out, target_tensor)
         results['val_loss_mae'] = val_loss_mae.item()
 
-        results['output'] = out.cpu().permute(1,2,0).detach().numpy() / 255
+        # results['output'] = out.cpu().permute(1,2,0).detach().numpy() / 255
 
         runs.append(results)
+        result_df = pd.DataFrame(runs)
+        result_df.to_feather(final_directory + "/results.feather")
         # break # Comment for complete run
 
     return runs
