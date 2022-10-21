@@ -13,19 +13,19 @@ The python files containing the model architectures and training and validation 
 
 ## Installing the environment
 The conda environment can be installed using `environment.yaml`. Or when using LISA (cluster computer) with the command:
-`sbatch ./jobs/install_env.job`
+  `sbatch ./jobs/install_env.job`
 
 ## Running the models
-# Deep image prior
+### Deep image prior
 The deep image prior model can be runned using the following command:
-`python ./code/dip.py ./configs/dip.yaml`
+  `python ./code/dip.py ./configs/dip.yaml`
 
 Or using LISA (cluster computer) by running the job via `sbatch`:
-`sbatch ./jobs/dip.job`
+  `sbatch ./jobs/dip.job`
 
-# Autoencoder
+### Autoencoder
 The autoencoder model can be runned using the following command:
-`python ./code/ae.py ./configs/data_config.yaml ./configs/model_config.yaml`
+  `python ./code/ae.py ./configs/data_config.yaml ./configs/model_config.yaml`
 
 Or using LISA (cluster computer) by running the job via `sbatch`:
-`sbatch ./jobs/ae.job`
+  `sbatch ./jobs/ae.job`
