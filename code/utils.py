@@ -1,9 +1,6 @@
 """
-File for various util functions
-
-- loss functions
-- transformations
-
+Based on Ulyanov et al.
+From: https://github.com/DmitryUlyanov/deep-image-prior
 """
 
 import torch

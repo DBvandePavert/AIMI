@@ -1,3 +1,8 @@
+"""
+Based on Ulyanov et al.
+From: https://github.com/DmitryUlyanov/deep-image-prior
+"""
+
 import os
 import time
 import numpy as np

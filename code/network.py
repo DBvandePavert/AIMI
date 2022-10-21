@@ -1,9 +1,6 @@
 """
-File to hold larger model building blocks
-
-- encoder
-- decoder
-
+Based on Ulyanov et al.
+From: https://github.com/DmitryUlyanov/deep-image-prior
 """
 
 # Deep image prior network function

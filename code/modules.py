@@ -1,11 +1,7 @@
 """
-File to hold the small model building blocks
-
-- convolutional block
-
+Based on Ulyanov et al.
+From: https://github.com/DmitryUlyanov/deep-image-prior
 """
-
-# Deep image prior model modules
 import numpy as np
 import torch
 import torch.nn as nn
